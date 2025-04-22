@@ -3,7 +3,6 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
-import session from 'express-session';
 
 dotenv.config();
 
@@ -30,12 +29,6 @@ app.use(cors({
 }));
 
 app.use(bodyParser.json());
-app.use(session({
-  secret: process.env.SECRET_KEY,
-  resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false }
-}));
 
 function cleanJsonOutput(text) {
   return text
@@ -77,9 +70,6 @@ Return only the pure JSON object with double quotes. No markdown, no extra text,
       return res.json({ partName, raw: rawText });
     }
 
-    req.session.partDescription = cleaned;
-    req.session.conversationHistory = [`System: Description of ${partName}: ${cleaned}`];
-
     res.json({ partName, description: parsedJson });
 
   } catch (error) {
@@ -90,15 +80,12 @@ Return only the pure JSON object with double quotes. No markdown, no extra text,
 
 app.post('/chat', async (req, res) => {
   try {
-    const { question } = req.body;
+    const { question, description } = req.body;
 
     if (!question) return res.status(400).json({ error: 'Please provide a question.' });
-    if (!req.session.partDescription) return res.status(400).json({ error: 'No part description found in session. Generate one first.' });
+    if (!description) return res.status(400).json({ error: 'Please provide a description of the part.' });
 
-    req.session.conversationHistory = req.session.conversationHistory || [];
-    req.session.conversationHistory.push(`User: ${question}`);
-
-    const fullPrompt = `${req.session.conversationHistory.join('\n')}
+    const fullPrompt = `System: Description of the part:\n${JSON.stringify(description, null, 2)}\n\nUser: ${question}
 
 Answer in this strict JSON format:
 
@@ -124,26 +111,11 @@ Return only the JSON object. Do not include markdown, code fences, or explanatio
       return res.json({ question, raw: rawText });
     }
 
-    req.session.conversationHistory.push(`AI: ${cleaned}`);
     res.json({ question, answer: parsedJson });
 
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to generate chat response.', details: error.message });
-  }
-});
-
-app.post('/reset', (req, res) => {
-  req.session.destroy(() => {
-    res.json({ message: 'Session reset successfully.' });
-  });
-});
-
-app.get('/session', (req, res) => {
-  if (req.session.conversationHistory) {
-    res.json({ conversationHistory: req.session.conversationHistory });
-  } else {
-    res.status(400).json({ error: 'No conversation history found.' });
   }
 });
 

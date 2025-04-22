@@ -25,7 +25,7 @@ const app = express();
 const port = 5000;
 
 app.use(cors({
-  origin: 'https://v0-educational-web-platform-gilt.vercel.app/',
+  origin: '*',
   credentials: true
 }));
 

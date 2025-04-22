@@ -80,15 +80,15 @@ Return only the pure JSON object with double quotes. No markdown, no extra text,
 
 app.post('/chat', async (req, res) => {
   try {
-    const { question, description } = req.body;
+    const { question } = req.body;
 
     if (!question) return res.status(400).json({ error: 'Please provide a question.' });
-    if (!description) return res.status(400).json({ error: 'Please provide a description of the part.' });
 
-    const fullPrompt = `System: Description of the part:\n${JSON.stringify(description, null, 2)}\n\nUser: ${question}
+    const prompt = `You are an AI assistant. Answer the following question clearly and concisely in a JSON format:
 
-Answer in this strict JSON format:
+User: ${question}
 
+Respond in this JSON format:
 {
   "answer": "..."
 }
@@ -97,7 +97,7 @@ Return only the JSON object. Do not include markdown, code fences, or explanatio
 
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash",
-      contents: fullPrompt
+      contents: prompt
     });
 
     const rawText = response.text;
@@ -118,6 +118,7 @@ Return only the JSON object. Do not include markdown, code fences, or explanatio
     res.status(500).json({ error: 'Failed to generate chat response.', details: error.message });
   }
 });
+
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);

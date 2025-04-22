@@ -24,7 +24,11 @@ const ai = new GoogleGenAI({
 const app = express();
 const port = 5000;
 
-app.use(cors());
+app.use(cors({
+  origin: 'https://v0-educational-web-platform-gilt.vercel.app/',
+  credentials: true
+}));
+
 app.use(bodyParser.json());
 app.use(session({
   secret: process.env.SECRET_KEY,
